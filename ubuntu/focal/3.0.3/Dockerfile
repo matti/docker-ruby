@@ -19,6 +19,7 @@ RUN set -eux; \
   \
   savedAptMark="$(apt-mark showmanual)"; \
   apt-get update; \
+  apt-get upgrade -y; \
   apt-get install -y --no-install-recommends \
   bison \
   dpkg-dev \
