@@ -1,4 +1,5 @@
-FROM buildpack-deps:bionic
+FROM buildpack-deps:focal
+
 # skip installing gem documentation
 RUN set -eux; \
   mkdir -p /usr/local/etc; \
@@ -7,9 +8,10 @@ RUN set -eux; \
   echo 'update: --no-document'; \
   } >> /usr/local/etc/gemrc
 
-ENV RUBY_MAJOR 2.6
-ENV RUBY_VERSION 2.6.4
-ENV RUBY_DOWNLOAD_SHA256 df593cd4c017de19adf5d0154b8391bb057cef1b72ecdd4a8ee30d3235c65f09
+ENV LANG C.UTF-8
+ENV RUBY_MAJOR 3.0
+ENV RUBY_VERSION 3.0.3
+ENV RUBY_DOWNLOAD_SHA256 88cc7f0f021f15c4cd62b1f922e3a401697f7943551fe45b1fdf4f2417a17a9c
 
 # some of ruby's build scripts are written in ruby
 #   we purge system ruby later to make sure our final image uses what we just built
@@ -58,6 +60,7 @@ RUN set -eux; \
   find /usr/local -type f -executable -not \( -name '*tkinter*' \) -exec ldd '{}' ';' \
   | awk '/=>/ { print $(NF-1) }' \
   | sort -u \
+  | grep -vE '^/usr/local/lib/' \
   | xargs -r dpkg-query --search \
   | cut -d: -f1 \
   | sort -u \
@@ -68,23 +71,19 @@ RUN set -eux; \
   cd /; \
   rm -r /usr/src/ruby; \
   # verify we have no "ruby" packages installed
-  ! dpkg -l | grep -i ruby; \
+  if dpkg -l | grep -i ruby; then exit 1; fi; \
   [ "$(command -v ruby)" = '/usr/local/bin/ruby' ]; \
   # rough smoke test
   ruby --version; \
   gem --version; \
   bundle --version
 
-# install things globally, for great justice
-# and don't create ".bundle" in all our apps
+# don't create ".bundle" in all our apps
 ENV GEM_HOME /usr/local/bundle
-ENV BUNDLE_PATH="$GEM_HOME" \
-  BUNDLE_SILENCE_ROOT_WARNING=1 \
+ENV BUNDLE_SILENCE_ROOT_WARNING=1 \
   BUNDLE_APP_CONFIG="$GEM_HOME"
-# path recommendation: https://github.com/bundler/bundler/pull/6469#issuecomment-383235438
-ENV PATH $GEM_HOME/bin:$BUNDLE_PATH/gems/bin:$PATH
+ENV PATH $GEM_HOME/bin:$PATH
 # adjust permissions of a few directories for running "gem install" as an arbitrary user
 RUN mkdir -p "$GEM_HOME" && chmod 777 "$GEM_HOME"
-# (BUNDLE_PATH = GEM_HOME, no need to mkdir/chown both)
 
 CMD [ "irb" ]

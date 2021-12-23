@@ -1,6 +1,5 @@
 version: "2.1"
-
 services:
-  bionic:
-    image: mattipaksula/ruby:ubuntu-bionic-2.6.4
-    build: ubuntu/bionic/2.6.4
+  ubuntu-focal-3.0.3:
+    image: mattipaksula/ruby:ubuntu-focal-3.0.3
+    build: ubuntu/focal/3.0.3
